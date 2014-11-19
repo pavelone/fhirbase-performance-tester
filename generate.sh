@@ -223,13 +223,72 @@ function generate_json_rows ()
    done
 }
 
+################################################################################
+# function: patient_search_sql
+################################################################################
+function patient_search_sql ()
+{
+
+     local INDX="$1"
+     local SEED_DATA
+
+     if [[ ${INDX} -eq 0 ]]
+     then
+         INDX=1
+     fi
+      SEARCH_SQL="select fhir_search(('{\"base\":\"https://test.me\"}')::jsonb, 'Patient', 'name=\"given1$((${RANDOM}/$INDX + $INDX ))\"');"
+
+  echo "${SEARCH_SQL}"
+}
+
+###############################################################################
+# function: generate_search_sql
+################################################################################
+function generate_search_sql ()
+{
+   typeset -r NO_OF_ROWS="$1"
+   typeset -r FILENAME="$2"
+
+   rm -rf ${FILENAME}
+   process_log "creating search sql file."
+   NO_OF_LOOPS=${NO_OF_ROWS}
+   for ((i=0;i<${NO_OF_LOOPS};i++))
+   do
+       patient_search_sql $i >>${FILENAME}
+       #cat ${FILENAME} | psql -p 5433 -h localhost -d fhirbase fhirbase
+   done
+}
+
+
+################################################################################
+# run_sql_file: send SQL from a file to database
+################################################################################
+function run_sql_file ()
+{
+   typeset -r F_PGHOST="$1"
+   typeset -r F_PGPORT="$2"
+   typeset -r F_DBNAME="$3"
+   typeset -r F_PGUSER="$4"
+   typeset -r F_PGPASSWORD="$5"
+   typeset -r F_SQLFILE="$6"
+
+   export PGPASSWORD="${F_PGPASSWORD}"
+   ${PGHOME}/bin/psql -qAt -h ${F_PGHOST} -p ${F_PGPORT} -U ${F_PGUSER} \
+                  --single-transaction -d ${F_DBNAME} -f "${F_SQLFILE}"
+}
+
+#TODO: make measurement of clean insert without all generation
+#start_time=$(get_timestamp_nano)
+#generate_json_rows 10 'fixtures/pt2.json'
+#end_time=$(get_timestamp_nano)
+#total_time="$(get_timestamp_diff_nano "${end_time}" "${start_time}")"
+#echo "added 10 patients ${total_time} nanosec"
+
+
+generate_search_sql 100 'search_patients.sql'
 start_time=$(get_timestamp_nano)
-generate_json_rows 10 'fixtures/pt2.json'
+psql -qAt -p 5433 -h localhost -d fhirbase fhirbase --single-transaction -f 'search_patients.sql'
 end_time=$(get_timestamp_nano)
-
 total_time="$(get_timestamp_diff_nano "${end_time}" "${start_time}")"
-
-echo "added 10 patients ${total_time} nanosec"
-
-echo "TODO: implement search"
+echo "searched 100 patients ${total_time} nanosec"
 

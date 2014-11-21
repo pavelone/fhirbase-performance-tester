@@ -21,6 +21,6 @@ source ${DIRECTORY}/lib/fhir_func_lib.sh
 
 ##
 
-generate_json_rows 100 'fixtures/pt2.json'
-echo "added 100 patients"
+generate_json_rows $1 'fixtures/pt2.json'
+echo "added $1 patients"
 

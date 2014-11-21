@@ -131,3 +131,57 @@ function patient_json_seed_data ()
 
   echo "${SEED_DATA}"
 }
+
+
+###############################################################################
+# function: generate_json_rows
+################################################################################
+function generate_json_rows ()
+{
+   typeset -r NO_OF_ROWS="$1"
+   typeset -r FILENAME="$2"
+
+   rm -rf ${FILENAME}
+   process_log "creating json data."
+   NO_OF_LOOPS=${NO_OF_ROWS}
+   for ((i=0;i<${NO_OF_LOOPS};i++))
+   do
+       patient_json_seed_data $i >${FILENAME}
+       cat insert_patient_test.sql | psql -p ${PGPORT} -h ${PGHOST} -d ${PGDATABASE} -U ${PGUSER}
+   done
+}
+
+################################################################################
+# function: patient_search_sql
+################################################################################
+function patient_search_sql ()
+{
+
+     local INDX="$1"
+     local SEED_DATA
+
+     if [[ ${INDX} -eq 0 ]]
+     then
+         INDX=1
+     fi
+      SEARCH_SQL="select fhir_search(('{\"base\":\"https://test.me\"}')::jsonb, 'Patient', 'name=\"given1$((${RANDOM}/$INDX + $INDX ))\"');"
+
+  echo "${SEARCH_SQL}"
+}
+
+###############################################################################
+# function: generate_search_sql
+################################################################################
+function generate_search_sql ()
+{
+   typeset -r NO_OF_ROWS="$1"
+   typeset -r FILENAME="$2"
+
+   rm -rf ${FILENAME}
+   process_log "creating search sql file."
+   NO_OF_LOOPS=${NO_OF_ROWS}
+   for ((i=0;i<${NO_OF_LOOPS};i++))
+   do
+       patient_search_sql $i >>${FILENAME}
+   done
+}

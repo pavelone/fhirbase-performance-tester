@@ -21,6 +21,10 @@ source ${DIRECTORY}/lib/fhir_func_lib.sh
 
 ##
 
-generate_json_rows 100 'fixtures/pt2.json'
-echo "added 100 patients"
+generate_search_sql 100 'search_patients.sql'
+start_time=$(get_timestamp_nano)
+psql -qAt -p ${PGPORT} -h ${PGHOST} -d ${PGDATABASE} -U ${PGUSER} ${PGPASSWORD} --single-transaction -f 'search_patients.sql'
+end_time=$(get_timestamp_nano)
+total_time="$(get_timestamp_diff_nano "${end_time}" "${start_time}")"
+echo "searched 100 patients ${total_time} nanosec"
 
